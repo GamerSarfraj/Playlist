@@ -1,0 +1,101 @@
+name: Auto Update Zee5 Cookie in Playlist (Preserve Existing Structure)
+permissions:
+  contents: write
+on:
+  schedule:
+    - cron: '0 */4 * * *' # Every 4 hours (0:00, 4:00, 8:00, 12:00, 16:00, 20:00 UTC)
+  workflow_dispatch: # Manual trigger
+jobs:
+  update-cookies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main # Ensure we work on the main branch
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Check and Initialize Zee5.json
+        run: |
+          echo "=== Checking Zee5.json ==="
+          if [ -f Zee5.json ]; then
+            echo "✓ Zee5.json exists."
+            if jq -e . Zee5.json >/dev/null 2>&1; then
+              echo "✓ Zee5.json is valid JSON"
+              EXISTING_COOKIE=$(jq -r 'if type == "array" and length > 0 then .[0].cookie // .[0].hdntl // "none" else .cookie // .hdntl // "none" end' Zee5.json 2>/dev/null || echo "none")
+              echo "Current cookie: $EXISTING_COOKIE"
+            else
+              echo "✗ Zee5.json is invalid JSON. Initializing with minimal structure."
+              echo '{"cookie": "placeholder"}' > Zee5.json
+            fi
+          else
+            echo "✗ Zee5.json not found. Creating with minimal structure."
+            echo '{"cookie": "placeholder"}' > Zee5.json
+          fi
+          echo "Current Zee5.json content:"
+          cat Zee5.json
+      - name: Fetch Cookie URL
+        run: |
+          echo "=== Fetching from https://doctor-strange.developed-for-wanda.workers.dev/ ==="
+          curl -s -f https://doctor-strange.developed-for-wanda.workers.dev/ > stream.json
+          if [ ! -s stream.json ]; then
+            echo "✗ ERROR: Failed to fetch stream.json or file is empty."
+            exit 1
+          fi
+          echo "✓ Fetched stream.json, size: $(wc -c < stream.json) bytes"
+          if jq -e '.JITENDRAUNATTI.ZEE5.Cookie' stream.json >/dev/null 2>&1; then
+            echo "✓ JITENDRAUNATTI.ZEE5.Cookie found!"
+          else
+            echo "✗ JITENDRAUNATTI.ZEE5.Cookie NOT found."
+            exit 1
+          fi
+      - name: Extract Cookie and Update Zee5.json
+        run: |
+          echo "=== Extracting Cookie ==="
+          NEW_COOKIE=$(jq -r '.JITENDRAUNATTI.ZEE5.Cookie' stream.json 2>/dev/null || echo "null")
+          if [ "$NEW_COOKIE" = "null" ] || [ -z "$NEW_COOKIE" ]; then
+            echo "✗ ERROR: No valid cookie found. Update skipped."
+            exit 0
+          fi
+          echo "✓ New cookie extracted: $NEW_COOKIE"
+
+          echo "=== Updating Zee5.json ==="
+          cp Zee5.json Zee5_backup.json || true
+          EXISTING_COOKIE=$(jq -r 'if type == "array" and length > 0 then .[0].cookie // .[0].hdntl // "none" else .cookie // .hdntl // "none" end' Zee5.json 2>/dev/null || echo "none")
+          echo "Existing cookie: $EXISTING_COOKIE"
+
+          if jq -e 'type == "array"' Zee5.json >/dev/null 2>&1; then
+            jq --arg new_cookie "$NEW_COOKIE" 'map(.cookie = $new_cookie | del(.hdntl))' Zee5.json > Zee5_updated.json
+          else
+            jq --arg new_cookie "$NEW_COOKIE" '.cookie = $new_cookie | del(.hdntl)' Zee5.json > Zee5_updated.json
+          fi
+          mv Zee5_updated.json Zee5.json
+
+          echo "✓ Update complete. New content:"
+          cat Zee5.json
+          echo "Updated cookie: $(jq -r 'if type == "array" then .[0].cookie // "none" else .cookie // "none" end' Zee5.json 2>/dev/null || echo "none")"
+          touch .zee5-changed
+      - name: Commit Changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          if [ -f .zee5-changed ]; then
+            git add Zee5.json
+            COMMIT_MESSAGE="Update Zee5 cookie in Zee5.json (new: ${{ github.sha }})"
+            git commit -m "$COMMIT_MESSAGE" || {
+              echo "✗ ERROR: Commit failed. Creating fallback file."
+              echo '{"update": "forced", "timestamp": "'$(date -u +%F_%T)'", "cookie": "'"$NEW_COOKIE"'"}' > .force-commit.json
+              git add .force-commit.json
+              git commit -m "Fallback update Zee5.json (new: ${{ github.sha }})"
+            }
+            git push || {
+              echo "✗ ERROR: Git push failed."
+              git status
+              exit 1
+            }
+            echo "✓ Changes committed and pushed to main!"
+          else
+            echo "✓ No changes to commit."
+          fi
+          rm -f stream.json Zee5_backup.json .zee5-changed .force-commit.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
