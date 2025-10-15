@@ -1,22 +1,7 @@
 [
   {
-    "logo": "https://images.fancode.com/aig/match/v1/137494_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Sharjah Vs Dubai",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137494_english_hls_477a12c79b3102ta-di_h264/index.m3u8"
-  },
-  {
     "logo": "https://images.fancode.com/aig/match/v1/137466_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Oud Heverlee Leuven Women Vs Fc Twente Women",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137466_english_hls_20aec6d8d226956ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/137465_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Chelsea F.c. Women Vs Paris Fc Women",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137465_english_hls_51087e44cc65860ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/137464_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Roma Women Vs Barcelona Women",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137464_english_hls_bd90d1517280766ta-di_h264/index.m3u8"
   }
 ]
