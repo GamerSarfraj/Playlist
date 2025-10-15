@@ -8,5 +8,15 @@
     "logo": "https://images.fancode.com/aig/match/v1/137190_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Nepal Vs Oman",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137190_english_hls_6e01712c0b70309ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/137463_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Valerenga Fotball Women Vs Vfl Wolfsburg Women",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/137463_english_hls_4ee8b9aafa91489ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/137462_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Olympique Lyonnais Women Vs Skn St. Polten Women",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/137462_english_hls_1e38b3f13122520ta-di_h264/index.m3u8"
   }
 ]
