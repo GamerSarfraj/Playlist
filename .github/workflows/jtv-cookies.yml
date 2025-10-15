@@ -1,0 +1,96 @@
+name: Auto Update JioTV Cookies (Fixed Path and Force Update Every 4 Hours)
+permissions:
+  contents: write
+on:
+  schedule:
+    - cron: '0 */4 * * *' # Every 4 hours (0:00, 4:00, 8:00, 12:00, 16:00, 20:00 UTC)
+  workflow_dispatch: # Manual trigger
+jobs:
+  update-cookies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history to avoid shallow clone issues
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Fetch and Debug new URL
+        run: |
+          echo "=== Fetching from https://doctor-strange.developed-for-wanda.workers.dev/ ==="
+          curl -s https://doctor-strange.developed-for-wanda.workers.dev/ > stream.json
+          if [ ! -s stream.json ]; then
+            echo "✗ ERROR: Failed to fetch stream.json. File is empty."
+            exit 1
+          fi
+          echo "File size: $(wc -c < stream.json) bytes"
+          echo "Searching for JITENDRAUNATTI.JIOTV.hmac.hdnea.value..."
+          if jq -e '.JITENDRAUNATTI.JIOTV.hmac.hdnea.value' stream.json >/dev/null 2>&1; then
+            echo "✓ JITENDRAUNATTI.JIOTV.hmac.hdnea.value found in file!"
+          else
+            echo "✗ JITENDRAUNATTI.JIOTV.hmac.hdnea.value NOT found. Dumping first 200 lines:"
+            head -n 200 stream.json
+            exit 1
+          fi
+      - name: Extract Cookie and Update Jiotv.json
+        run: |
+          echo "=== Extracting Cookie ==="
+          NEW_COOKIE=$(jq -r '.JITENDRAUNATTI.JIOTV.hmac.hdnea.value' stream.json 2>/dev/null || echo "null")
+          if [ "$NEW_COOKIE" = "null" ]; then
+            echo "✗ ERROR: No valid cookie found in JITENDRAUNATTI.JIOTV.hmac.hdnea.value. Update skipped."
+            rm -f stream.json
+            exit 0
+          fi
+          echo "✓ Full cookie extracted: $NEW_COOKIE"
+
+          echo "=== Updating Jiotv.json ==="
+          # Create a backup of Jiotv.json or initialize if missing
+          cp Jiotv.json Jiotv_backup.json 2>/dev/null || echo '[{"cookie": ""}]' > Jiotv_backup.json
+          if ! jq -e . Jiotv_backup.json >/dev/null 2>&1; then
+            echo "✗ WARNING: Jiotv.json is invalid JSON. Creating a basic structure."
+            echo '[{"cookie": "'"$NEW_COOKIE"'"}]' > Jiotv_backup.json
+          fi
+          # Update cookie in Jiotv.json
+          jq --arg new_cookie "$NEW_COOKIE" 'map(if .cookie then .cookie = $new_cookie else . + {"cookie": $new_cookie} end)' Jiotv_backup.json > Jiotv_updated.json
+          mv Jiotv_updated.json Jiotv.json
+
+          echo "✓ Update complete. New cookie: $NEW_COOKIE"
+          echo "Preview of updated Jiotv.json (first entry's cookie):"
+          jq '.[0].cookie' Jiotv.json 2>/dev/null || echo "No valid JSON to preview"
+
+          # Stage Jiotv.json to avoid unstaged changes
+          git add Jiotv.json
+      - name: Clean Up Temporary Files
+        run: |
+          # Remove temporary files
+          rm -f stream.json Jiotv_backup.json
+          echo "✓ Cleaned up temporary files (stream.json, Jiotv_backup.json)"
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # Check if Jiotv.json has changes
+          if git diff --staged --quiet; then
+            echo "✓ No changes to Jiotv.json. Skipping commit."
+            exit 0
+          fi
+
+          # Commit changes to Jiotv.json
+          git commit -m "Auto-update cookies in Jiotv.json (new: ${{ github.sha }})"
+
+          # Pull latest changes with rebase
+          git pull --rebase origin main || {
+            echo "✗ ERROR: Git pull --rebase failed. Dumping git status:"
+            git status
+            exit 1
+          }
+
+          # Push changes
+          git push || {
+            echo "✗ ERROR: Git push failed. Checking GITHUB_TOKEN or repo permissions."
+            echo "Dumping git status:"
+            git status
+            exit 1
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
