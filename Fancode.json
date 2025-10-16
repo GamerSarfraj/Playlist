@@ -1,17 +1,12 @@
 [
   {
-    "logo": "https://images.fancode.com/aig/match/v1/137478_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Benfica Women Vs Arsenal Women",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137478_english_hls_326feb877341812ta-di_h264/index.m3u8"
+    "logo": "https://images.fancode.com/aig/match/v1/119244_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Day 1",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/119244_english_hls_a3e33e3cc163583ta-di_h264/index.m3u8"
   },
   {
-    "logo": "https://images.fancode.com/aig/match/v1/137476_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Bayern Munich Women Vs Juventus Women",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137476_english_hls_50c2e3fe5395697ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/137477_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Paris Saint Germain Women Vs Real Madrid Women",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137477_english_hls_060da1603260701ta-di_h264/index.m3u8"
+    "logo": "https://images.fancode.com/aig/match/v1/137739_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Los Angeles Dodgers Vs Milwaukee Brewers",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/137739_english_hls_0c59026abc56695ta-di_h264/index.m3u8"
   }
 ]
