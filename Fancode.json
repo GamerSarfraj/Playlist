@@ -8,5 +8,15 @@
     "logo": "https://images.fancode.com/aig/match/v1/134017_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Victoria Vs New South Wales",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/134017_english_hls_008c2e4cf120767ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/134019_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "South Australia Vs Queensland",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/134019_english_hls_da71180f5836386ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/137738_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Seattle Mariners Vs Toronto Blue Jays",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/137738_english_hls_ffe8d9f9c580139ta-di_h264/index.m3u8"
   }
 ]
