@@ -5,11 +5,6 @@
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137499_english_hls_1a4a33290619246ta-di_h264/index.m3u8"
   },
   {
-    "logo": "https://images.fancode.com/aig/match/v1/137712_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "West Coast Blues Vs Wellington Wolves",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137712_english_hls_ebc44e13bb80804ta-di_h264/index.m3u8"
-  },
-  {
     "logo": "https://images.fancode.com/aig/match/v1/136949_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Charlton Athletic F.c Vs Sheffield Wednesday F.c.",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/136949_english_hls_b789f25f757047ta-di_h264/index.m3u8"
@@ -38,15 +33,5 @@
     "logo": "https://images.fancode.com/aig/match/v1/137281_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "British Champions' Stakes",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137281_english_hls_958078664a43687ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/137700_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Bangladesh Vs West Indies",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137700_english_hls_625c392f2934863ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/137700_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Bangladesh Vs West Indies",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137700_hindi_hls_83f0f8d7fe54956ta-di_h264/index.m3u8"
   }
 ]
