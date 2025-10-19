@@ -1,17 +1,7 @@
 [
   {
-    "logo": "https://images.fancode.com/aig/match/v1/118475_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Race",
-    "link": "https://d2koea2bsmlleg.cloudfront.net/out/v1/7250c2e644524423887fe6a503f2bf11/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/118475_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Race",
-    "link": "https://d3abohpa9l1evf.cloudfront.net/out/v1/0920cb17c7cf4e76b83c5e1818c083b7/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/118475_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Race",
-    "link": "https://didup8j4lwtvq.cloudfront.net/out/v1/35aaa4ca599e4af7b8994d88b0333ce1/index.m3u8"
+    "logo": "https://images.fancode.com/aig/match/v1/133937_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Victoria Vs New South Wales",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/133937_english_hls_06937fc8c674787ta-di_h264/index.m3u8"
   }
 ]
