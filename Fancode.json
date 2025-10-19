@@ -1,25 +1,5 @@
 [
   {
-    "logo": "https://images.fancode.com/aig/match/v1/130915_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Levante Vs Rayo Vallecano",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/130915_english_hls_f1b1ca904d12036adfreeta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/137717_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Stellenbosch Kings Vs West Coast Blues",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137717_english_hls_c97d25cc3270388ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/137502_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Emirates Blues Vs Abu Dhabi",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137502_english_hls_0d8d63317f25681ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/137215_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Racing De Santander Vs Deportivo De La Coru\u00f1a",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137215_english_hls_8ab9234e0323896ta-di_h264/index.m3u8"
-  },
-  {
     "logo": "https://images.fancode.com/aig/match/v1/118475_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Race",
     "link": "https://d2koea2bsmlleg.cloudfront.net/out/v1/7250c2e644524423887fe6a503f2bf11/index.m3u8"
@@ -33,5 +13,25 @@
     "logo": "https://images.fancode.com/aig/match/v1/118475_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Race",
     "link": "https://didup8j4lwtvq.cloudfront.net/out/v1/35aaa4ca599e4af7b8994d88b0333ce1/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/130915_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Levante Vs Rayo Vallecano",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/130915_english_hls_f1b1ca904d12036adfreeta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/136607_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Neom Sc Vs Al Qadsiah Fc",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/136607_english_hls_0e43f962ad65462ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/137502_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Emirates Blues Vs Abu Dhabi",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/137502_english_hls_0d8d63317f25681ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/137215_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Racing De Santander Vs Deportivo De La Coru\u00f1a",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/137215_english_hls_8ab9234e0323896ta-di_h264/index.m3u8"
   }
 ]
