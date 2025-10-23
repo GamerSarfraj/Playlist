@@ -10,6 +10,11 @@
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137702_hindi_hls_856d072f7746149ta-di_h264/index.m3u8"
   },
   {
+    "logo": "https://images.fancode.com/aig/match/v1/137509_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Dubai Vs Sharjah",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/137509_english_hls_aa7f4715e757525ta-di_h264/index.m3u8"
+  },
+  {
     "logo": "https://images.fancode.com/aig/match/v1/136168_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Persib Bandung Vs Selangor",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/136168_english_hls_8250d8ff7e25823ta-di_h264/index.m3u8"
@@ -23,5 +28,10 @@
     "logo": "https://images.fancode.com/aig/match/v1/136144_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Cong An Ha Noi Vs Macarthur",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/136144_english_hls_58a8d8376295505ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/137315_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Day 1   Featured Groups",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/137315_english_hls_d88bf815f681988ta-di_h264/index.m3u8"
   }
 ]
