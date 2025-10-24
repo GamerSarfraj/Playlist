@@ -1,28 +1,18 @@
 [
   {
-    "logo": "https://images.fancode.com/aig/match/v1/118476_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Practice 1",
-    "link": "https://d2xclhq6ntmw34.cloudfront.net/out/v1/3c9aa3f5f1474c2db4570635f056f8a9/index.m3u8"
-  },
-  {
     "logo": "https://images.fancode.com/aig/match/v1/136609_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Al Ittihad Vs Al Hilal Sfc",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/136609_english_hls_ab1456905c17101ta-di_h264/index.m3u8"
   },
   {
-    "logo": "https://images.fancode.com/aig/match/v1/137511_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Emirates Blues Vs Sharjah",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137511_english_hls_0e172242f751680ta-di_h264/index.m3u8"
+    "logo": "https://images.fancode.com/aig/match/v1/130921_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Real Sociedad Vs Sevilla Fc",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/130921_english_hls_c6da498b48865adfreeta-di_h264/index.m3u8"
   },
   {
     "logo": "https://images.fancode.com/aig/match/v1/136955_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Preston North End F.c. Vs Sheffield United F.c.",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/136955_english_hls_9d2acf98eb21809ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/130921_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Real Sociedad Vs Sevilla Fc",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/130921_english_hls_c6da498b48865adfreeta-di_h264/index.m3u8"
   },
   {
     "logo": "https://images.fancode.com/aig/match/v1/137610_CASACARDS_PARTNER_16_9_1920_1080.png",
@@ -33,5 +23,10 @@
     "logo": "https://images.fancode.com/aig/match/v1/137318_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Day 2   Featured Groups",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137318_english_hls_1778e4abcc97607ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/118476_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Practice 1",
+    "link": "https://d2xclhq6ntmw34.cloudfront.net/out/v1/3c9aa3f5f1474c2db4570635f056f8a9/index.m3u8"
   }
 ]
