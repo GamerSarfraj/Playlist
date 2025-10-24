@@ -1,5 +1,10 @@
 [
   {
+    "logo": "https://images.fancode.com/aig/match/v1/118477_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Practice 2",
+    "link": "https://d2dloyxxfble5g.cloudfront.net/out/v1/cc7eb4e81ef7455ca3f10a1f6a2ccd4a/index.m3u8"
+  },
+  {
     "logo": "https://images.fancode.com/aig/match/v1/137318_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Day 2   Featured Groups",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137318_english_hls_1778e4abcc97607ta-di_h264/index.m3u8"
@@ -8,10 +13,5 @@
     "logo": "https://images.fancode.com/aig/match/v1/137317_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Day 2   World Feed",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137317_english_hls_ed2e751e1283579ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/130921_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Real Sociedad Vs Sevilla Fc",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/130921_english_hls_c6da498b48865adfreeta-di_h264/index.m3u8"
   }
 ]
