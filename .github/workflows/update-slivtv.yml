@@ -2,8 +2,8 @@ name: Update HDNEA Token in Slivtv.json
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs every hour
-  workflow_dispatch: # Allows manual trigger
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
   update-token:
@@ -18,75 +18,60 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install axios
+        run: npm install axios https-proxy-agent
 
-      - name: Fetch and update HDNEA token in Slivtv.json
+      - name: Fetch and update HDNEA token
         run: |
           node -e "
           const fs = require('fs');
           const axios = require('axios');
+          const HttpsProxyAgent = require('https-proxy-agent');
+
+          const proxyHost = '${{ secrets.PROXY_HOST }}';
+          const proxyPort = '${{ secrets.PROXY_PORT }}';
+          const proxyUser = '${{ secrets.PROXY_USER }}';
+          const proxyPass = '${{ secrets.PROXY_PASS }}';
+
+          const proxyUrl = `http://${proxyUser}:${proxyPass}@${proxyHost}:${proxyPort}`;
+          const agent = new HttpsProxyAgent(proxyUrl);
+
           async function updateToken() {
             try {
-              // Check if Slivtv.json exists
-              if (!fs.existsSync('Slivtv.json')) {
-                console.error('Error: Slivtv.json not found');
-                process.exit(1);
-              }
-              
-              // Read Slivtv.json
+              if (!fs.existsSync('Slivtv.json')) throw new Error('File not found');
+
               const json = JSON.parse(fs.readFileSync('Slivtv.json', 'utf8'));
-              
-              // Ensure json is an array
-              if (!Array.isArray(json)) {
-                console.error('Error: Slivtv.json must be an array of channels');
-                process.exit(1);
-              }
-              
-              // Find Sony SAB HD channel
+              if (!Array.isArray(json)) throw new Error('Invalid JSON format');
+
               const channel = json.find(ch => ch.name === 'Sony SAB HD');
-              if (!channel || !channel.link) {
-                console.error('Error: Sony SAB HD channel or link not found');
-                process.exit(1);
-              }
-              
-              // Fetch token
-              const response = await axios.get('https://apiv2.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1090492858', {
-                headers: {
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-                  'Accept': 'application/json',
-                  'Origin': 'https://www.sonyliv.com',
-                  'Referer': 'https://www.sonyliv.com/',
-                  'Accept-Language': 'en-US,en;q=0.9'
+              if (!channel?.link) throw new Error('Channel not found');
+
+              const res = await axios.get(
+                'https://apiv2.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1090492858',
+                {
+                  headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Origin': 'https://www.sonyliv.com',
+                    'Referer': 'https://www.sonyliv.com/',
+                    'Accept-Language': 'en-US,en;q=0.9'
+                  },
+                  httpsAgent: agent,
+                  timeout: 15000
                 }
-              });
-              const data = response.data;
-              if (!data.resultObj?.videoURL) throw new Error('videoURL missing');
-              const query = data.resultObj.videoURL.split('?')[1];
-              const hdneaMatch = query?.match(/hdnea=([^&]+)/);
-              const token = hdneaMatch ? decodeURIComponent(hdneaMatch[1]) : 'No HDNEA token found';
-              
-              // Update hdnea in link
-              channel.link = channel.link.replace(/hdnea=[^&]+/, 'hdnea=' + token);
-              
-              // Write updated JSON
+              );
+
+              const url = res.data.resultObj?.videoURL;
+              if (!url) throw new Error('videoURL missing');
+
+              const hdnea = url.match(/hdnea=([^&]+)/)?.[1];
+              if (!hdnea) throw new Error('Token not found');
+
+              const token = decodeURIComponent(hdnea);
+              channel.link = channel.link.replace(/hdnea=[^&]+/, 'hdnea=' + encodeURIComponent(token));
+
               fs.writeFileSync('Slivtv.json', JSON.stringify(json, null, 2));
-              console.log('Token updated successfully');
-            } catch (error) {
-              console.error('Error fetching token: ' + error.message);
-              console.error('Response data:', JSON.stringify(error.response?.data || 'No response data', null, 2));
-              console.error('Status code:', error.response?.status || 'No status');
-              
-              // Update JSON with error message
-              try {
-                const json = JSON.parse(fs.readFileSync('Slivtv.json', 'utf8'));
-                const channel = json.find(ch => ch.name === 'Sony SAB HD');
-                if (channel && channel.link) {
-                  channel.link = channel.link.replace(/hdnea=[^&]+/, 'hdnea=Error: ' + error.message);
-                  fs.writeFileSync('Slivtv.json', JSON.stringify(json, null, 2));
-                }
-              } catch (writeError) {
-                console.error('Error updating JSON: ' + writeError.message);
-              }
+              console.log('Updated HDNEA token');
+            } catch (err) {
+              console.error('Failed:', err.message);
               process.exit(1);
             }
           }
@@ -95,10 +80,10 @@ jobs:
 
       - name: Commit changes
         run: |
-          git config user.name "GitHub Actions Bot"
+          git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add Slivtv.json
-          git commit -m "Update HDNEA token in Slivtv.json" || echo "No changes to commit"
+          git commit -m "Update HDNEA token" || exit 0
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
