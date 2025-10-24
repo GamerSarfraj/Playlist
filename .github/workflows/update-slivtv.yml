@@ -1,4 +1,4 @@
-name: Update HDNEA Token in Slivtv.json
+name: Update HDNEA Token with Cookies
 
 on:
   schedule:
@@ -9,7 +9,7 @@ jobs:
   update-token:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Node.js
@@ -17,73 +17,97 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: npm install axios https-proxy-agent
+      - name: Install Puppeteer + Dependencies
+        run: |
+          npm install puppeteer axios
 
-      - name: Fetch and update HDNEA token
+      - name: Get HDNEA Token using Browser Cookies
         run: |
           node -e "
           const fs = require('fs');
+          const puppeteer = require('puppeteer');
           const axios = require('axios');
-          const HttpsProxyAgent = require('https-proxy-agent');
 
-          const proxyHost = '${{ secrets.PROXY_HOST }}';
-          const proxyPort = '${{ secrets.PROXY_PORT }}';
-          const proxyUser = '${{ secrets.PROXY_USER }}';
-          const proxyPass = '${{ secrets.PROXY_PASS }}';
-
-          const proxyUrl = `http://${proxyUser}:${proxyPass}@${proxyHost}:${proxyPort}`;
-          const agent = new HttpsProxyAgent(proxyUrl);
-
-          async function updateToken() {
+          (async () => {
+            let browser;
             try {
-              if (!fs.existsSync('Slivtv.json')) throw new Error('File not found');
+              console.log('Launching browser...');
+              browser = await puppeteer.launch({
+                headless: true,
+                args: [
+                  '--no-sandbox',
+                  '--disable-setuid-sandbox',
+                  '--disable-dev-shm-usage',
+                  '--disable-web-security',
+                  '--disable-features=IsolateOrigins,site-per-process',
+                  '--disable-blink-features=AutomationControlled',
+                  '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                ],
+                defaultViewport: null
+              });
 
+              const page = await browser.newPage();
+
+              // Block unnecessary resources
+              await page.setRequestInterception(true);
+              page.on('request', (req) => {
+                const resourceType = req.resourceType();
+                if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+                  req.abort();
+                } else {
+                  req.continue();
+                }
+              });
+
+              console.log('Opening SonyLIV...');
+              await page.goto('https://www.sonyliv.com/shows/sab-tv-live', {
+                waitUntil: 'networkidle2',
+                timeout: 30000
+              });
+
+              // Wait for API to be called
+              console.log('Waiting for VIDEOURL API...');
+              const response = await page.waitForResponse(res => 
+                res.url().includes('VIDEOURL/VOD/1090492858') && res.status() === 200,
+                { timeout: 20000 }
+              );
+
+              const data = await response.json();
+              const videoURL = data.resultObj?.videoURL;
+              if (!videoURL) throw new Error('videoURL not found');
+
+              const hdneaMatch = videoURL.match(/hdnea=([^&]+)/);
+              if (!hdneaMatch) throw new Error('HDNEA token not found');
+
+              const token = decodeURIComponent(hdneaMatch[1]);
+
+              // Update JSON
+              if (!fs.existsSync('Slivtv.json')) throw new Error('Slivtv.json missing');
               const json = JSON.parse(fs.readFileSync('Slivtv.json', 'utf8'));
-              if (!Array.isArray(json)) throw new Error('Invalid JSON format');
-
               const channel = json.find(ch => ch.name === 'Sony SAB HD');
               if (!channel?.link) throw new Error('Channel not found');
 
-              const res = await axios.get(
-                'https://apiv2.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1090492858',
-                {
-                  headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Origin': 'https://www.sonyliv.com',
-                    'Referer': 'https://www.sonyliv.com/',
-                    'Accept-Language': 'en-US,en;q=0.9'
-                  },
-                  httpsAgent: agent,
-                  timeout: 15000
-                }
-              );
-
-              const url = res.data.resultObj?.videoURL;
-              if (!url) throw new Error('videoURL missing');
-
-              const hdnea = url.match(/hdnea=([^&]+)/)?.[1];
-              if (!hdnea) throw new Error('Token not found');
-
-              const token = decodeURIComponent(hdnea);
               channel.link = channel.link.replace(/hdnea=[^&]+/, 'hdnea=' + encodeURIComponent(token));
-
               fs.writeFileSync('Slivtv.json', JSON.stringify(json, null, 2));
-              console.log('Updated HDNEA token');
+
+              console.log('HDNEA Token Updated via Browser Cookies!');
+              console.log('Token (first 60):', token.substring(0, 60) + '...');
+
             } catch (err) {
               console.error('Failed:', err.message);
               process.exit(1);
+            } finally {
+              if (browser) await browser.close();
             }
-          }
-          updateToken();
+          })();
           "
 
-      - name: Commit changes
+      - name: Commit & Push
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add Slivtv.json
-          git commit -m "Update HDNEA token" || exit 0
+          git commit -m "Update HDNEA via browser cookies" || echo "No change"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
