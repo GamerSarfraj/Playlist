@@ -1,4 +1,4 @@
-name: Update HDNEA Token with Play Click
+name: Update HDNEA from API with Cookies
 
 on:
   schedule:
@@ -12,26 +12,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Puppeteer + Axios
-        run: |
-          npm install puppeteer axios
+      - name: Install Puppeteer
+        run: npm install puppeteer
 
-      - name: Get HDNEA by Clicking Play Button
+      - name: Get HDNEA from Your API using Cookies
         run: |
           node -e "
           const fs = require('fs');
           const puppeteer = require('puppeteer');
-          const axios = require('axios');
 
           (async () => {
             let browser;
             try {
-              console.log('Launching stealth browser...');
+              console.log('Launching browser...');
               browser = await puppeteer.launch({
                 headless: true,
                 args: [
@@ -39,64 +37,64 @@ jobs:
                   '--disable-setuid-sandbox',
                   '--disable-web-security',
                   '--disable-features=IsolateOrigins,site-per-process',
-                  '--disable-blink-features=AutomationControlled',
-                  '--start-maximized'
-                ],
-                defaultViewport: null
+                  '--disable-blink-features=AutomationControlled'
+                ]
               });
 
               const page = await browser.newPage();
 
-              // Hide automation
-              await page.evaluateOnNewDocument(() => {
-                Object.defineProperty(navigator, 'webdriver', { get: () => false });
-                window.chrome = { runtime: {} };
-                Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] });
-              });
-
+              // Set real user agent
               await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
 
-              // Block images, fonts, etc.
+              // Block unnecessary resources
               await page.setRequestInterception(true);
               page.on('request', (req) => {
                 const type = req.resourceType();
-                if (['image', 'stylesheet', 'font', 'media'].includes(type)) {
+                if (['image', 'stylesheet', 'font'].includes(type)) {
                   req.abort();
                 } else {
                   req.continue();
                 }
               });
 
-              console.log('Opening Sony SAB Live...');
-              await page.goto('https://www.sonyliv.com/live-tv/sab-tv-live-1000004996', {
+              // Open SonyLIV homepage to get cookies
+              console.log('Opening sonyliv.com to get cookies...');
+              await page.goto('https://www.sonyliv.com', {
                 waitUntil: 'networkidle2',
-                timeout: 30000
+                timeout: 20000
               });
 
-              // Wait for Play Button
-              console.log('Waiting for Play button...');
-              await page.waitForSelector('button.play-button, button[aria-label=\"Play\"], .play-icon', { 
-                timeout: 15000 
-              });
+              // Get cookies
+              const cookies = await page.cookies();
+              const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
 
-              // Click Play
-              console.log('Clicking Play button...');
-              await page.click('button.play-button, button[aria-label=\"Play\"], .play-icon');
+              console.log('Cookies captured:', cookieHeader.substring(0, 100) + '...');
 
-              // Wait for API
-              console.log('Waiting for VIDEOURL API...');
-              const response = await page.waitForResponse(res => 
-                res.url().includes('VIDEOURL/VOD/1090492858') && 
-                res.status() === 200,
-                { timeout: 20000 }
-              );
+              // Now call YOUR API using same cookies
+              console.log('Calling your API with cookies...');
+              const response = await page.evaluate(async (cookieHeader) => {
+                const res = await fetch('https://apiv2.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1090492858', {
+                  method: 'GET',
+                  headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'application/json',
+                    'Origin': 'https://www.sonyliv.com',
+                    'Referer': 'https://www.sonyliv.com/',
+                    'Cookie': cookieHeader,
+                    'Accept-Language': 'en-US,en;q=0.9'
+                  }
+                });
+                return { status: res.status, data: await res.json() };
+              }, cookieHeader);
 
-              const data = await response.json();
-              const videoURL = data.resultObj?.videoURL;
-              if (!videoURL) throw new Error('videoURL missing');
+              if (response.status !== 200) {
+                throw new Error(`API returned ${response.status}`);
+              }
 
-              const hdneaMatch = videoURL.match(/hdnea=([^&\"']+)/);
+              const videoURL = response.data?.resultObj?.videoURL;
+              if (!videoURL) throw new Error('videoURL missing in response');
+
+              const hdneaMatch = videoURL.match(/hdnea=([^&]+)/);
               if (!hdneaMatch) throw new Error('HDNEA token not found');
 
               const token = decodeURIComponent(hdneaMatch[1]);
@@ -110,8 +108,8 @@ jobs:
               channel.link = channel.link.replace(/hdnea=[^&]+/, 'hdnea=' + encodeURIComponent(token));
               fs.writeFileSync('Slivtv.json', JSON.stringify(json, null, 2));
 
-              console.log('HDNEA Token Updated Successfully!');
-              console.log('Token preview:', token.substring(0, 60) + '...');
+              console.log('HDNEA Token Updated from YOUR API!');
+              console.log('Token:', token.substring(0, 60) + '...');
 
             } catch (err) {
               console.error('Failed:', err.message);
@@ -127,7 +125,7 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add Slivtv.json
-          git commit -m "Update HDNEA via Play button click" || echo "No change"
+          git commit -m "Update HDNEA from API with cookies" || echo "No change"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
