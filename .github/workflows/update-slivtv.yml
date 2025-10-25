@@ -2,7 +2,7 @@ name: Update HDNEA from Direct API in Browser
 
 on:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 */3 * * *'
   workflow_dispatch:
 
 jobs:
