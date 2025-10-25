@@ -1,10 +1,5 @@
 [
   {
-    "logo": "https://images.fancode.com/aig/match/v1/137726_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "West Coast Blues Vs Paarl Rocks",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137726_english_hls_582afcf82c67486ta-di_h264/index.m3u8"
-  },
-  {
     "logo": "https://images.fancode.com/aig/match/v1/130929_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Athletic Club Vs Getafe Cf",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/130929_english_hls_8469ad708c51045adfreeta-di_h264/index.m3u8"
@@ -13,5 +8,10 @@
     "logo": "https://images.fancode.com/aig/match/v1/137611_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Granada Vs C\u00e1diz",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137611_english_hls_4676ec988f80885ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/118478_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Practice 3",
+    "link": "https://dre63cd2n1um1.cloudfront.net/out/v1/e03795af48254d2a8cca485124998039/index.m3u8"
   }
 ]
