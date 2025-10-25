@@ -44,28 +44,30 @@ jobs:
               print(f"API request failed: {e}")
               sys.exit(1)
 
-          playback_url = data.get("result", {}).get("playbackUrl")
-          if not playback_url:
-              print("ERROR: playbackUrl not found in API response")
-              print("API Response:", data)
+          # Use videoURL instead of playbackUrl (as per API response)
+          video_url = data.get("result", {}).get("videoURL")
+          if not video_url:
+              print("ERROR: videoURL not found in API response")
+              print("API Response keys:", list(data.get("result", {}).keys()))
               sys.exit(1)
 
-          print(f"Step 2: Found playbackUrl → {playback_url[:100]}...")
+          print(f"Step 2: Found videoURL → {video_url[:100]}...")
 
-          print("Step 3: Downloading .m3u8 playlist...")
+          print("Step 3: Downloading .mpd file...")
           try:
-              hls_resp = requests.get(playback_url, timeout=20)
-              hls_resp.raise_for_status()
-              hls_content = hls_resp.text
+              mpd_resp = requests.get(video_url, timeout=20)
+              mpd_resp.raise_for_status()
+              mpd_content = mpd_resp.text
           except Exception as e:
-              print(f"HLS download failed: {e}")
+              print(f"MPD download failed: {e}")
               sys.exit(1)
 
-          hdnea_match = re.search(r'hdnea=[^&\s"\'?]+', hls_content)
+          # Extract hdnea from .mpd content
+          hdnea_match = re.search(r'hdnea=[^&\s"\'?]+', mpd_content)
           if not hdnea_match:
-              print("ERROR: hdnea not found in .m3u8 file")
-              print("First 500 chars of HLS:")
-              print(hls_content[:500])
+              print("ERROR: hdnea not found in .mpd file")
+              print("First 500 chars of MPD:")
+              print(mpd_content[:500])
               sys.exit(1)
 
           hdnea = hdnea_match.group(0)
