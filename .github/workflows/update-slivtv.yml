@@ -2,11 +2,11 @@ name: Update SonyLIV hdnea in Slivtv.json
 
 on:
   schedule:
-    - cron: '0 */4 * * *'  # Har 4 ghante mein
-  workflow_dispatch:
+    - cron: '0 */4 * * *'   # Har 4 ghante mein chalega
+  workflow_dispatch:        # Manual run ke liye
 
 jobs:
-  update:
+  update-hdnea:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,89 +15,101 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
       - name: Install Requests
-        run: pip install-install requests
+        run: pip install requests
 
-      - name: Extract hdnea & Update JSON
+      - name: Fetch hdnea & Update Slivtv.json
         run: |
-          python - <<'PY'
+          python << 'PY'
           import requests
           import json
           import re
           import sys
+          import os
 
           API_URL = "https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729"
           FILE = "Slivtv.json"
 
+          print("Step 1: Downloading API JSON...")
           try:
-              # Step 1: Download API JSON
-              print("Fetching API JSON...")
-              resp = requests.get(API_URL, timeout=20)
+              resp = requests.get API_URL, timeout=20)
               resp.raise_for_status()
               data = resp.json()
+          except Exception as e:
+              print(f"API fetch failed: {e}")
+              sys.exit(1)
 
-              playback_url = data.get("result", {}).get("playbackUrl")
-              if not playback_url:
-                  print("playbackUrl not found in JSON")
-                  sys.exit(1)
+          playback_url = data.get("result", {}).get("playbackUrl")
+          if not playback_url:
+              print("playbackUrl not found in JSON response")
+              sys.exit(1)
 
-              print(f"Playback URL: {playback_url}")
+          print(f"Step 2: Found playbackUrl → {playback_url[:80]}...")
 
-              # Step 2: Download .m3u8 playlist
-              print("Fetching HLS playlist...")
+          print("Step 3: Downloading .m3u8 playlist...")
+          try:
               hls_resp = requests.get(playback_url, timeout=20)
               hls_resp.raise_for_status()
-              hls_text = hls_resp.text
-
-              # Step 3: Extract hdnea=...
-              hdnea_match = re.search(r'hdnea=[^&\s"\'?]+', hls_text)
-              if not hdnea_match:
-                  print("hdnea not found in .m3u8")
-                  sys.exit(1)
-
-              hdnea = hdnea_match.group(0)
-              print(f"Extracted hdnea: {hdnea}")
-
-              # Step 4: Update Slivtv.json
-              if not open(FILE).read().strip():
-                  print(f"{FILE} is empty!")
-                  sys.exit(1)
-
-              with open(FILE, 'r', encoding='utf-8') as f:
-                  channels = json.load(f)
-
-              updated = 0
-              for item in channels:
-                  if isinstance(item, dict) and 'link' in item:
-                      old_link = item['link']
-                      new_link = re.sub(r'hdnea=[^&\s"\'?]+', hdnea, old_link)
-                      if old_link != new_link:
-                          item['link'] = new_link
-                          updated += 1
-
-              with open(FILE, 'w', encoding='utf-8') as f:
-                  json.dump(channels, f, indent=2, ensure_ascii=False)
-
-              print(f"Updated {updated} channels in {FILE}")
-
+              hls_content = hls_resp.text
           except Exception as e:
-              print(f"Error: {e}")
-              import traceback
-              traceback.print_exc()
+              print(f"HLS fetch failed: {e}")
               sys.exit(1)
+
+          hdnea_match = re.search(r'hdnea=[^&\s"\'?]+', hls_content)
+          if not hdnea_match:
+              print("hdnea not found in .m3u8 file")
+              print("First 500 chars of HLS:")
+              print(hls_content[:500])
+              sys.exit(1)
+
+          hdnea = hdnea_match.group(0)
+          print(f"Step 4: Extracted hdnea → {hdnea}")
+
+          # Update JSON file
+          if not os.path.exists(FILE):
+              print(f"{FILE} not found in repository!")
+              sys.exit(1)
+
+          with open(FILE, 'r', encoding='utf-8') as f:
+              try:
+                  channels = json.load(f)
+              except json.JSONDecodeError as e:
+                  print(f"Invalid JSON in {FILE}: {e}")
+                  sys.exit(1)
+
+          if not isinstance(channels, list):
+              print(f"{FILE} must contain a JSON array of channels")
+              sys.exit(1)
+
+          updated_count = 0
+          for item in channels:
+              if isinstance(item, dict) and 'link' in item:
+                  old = item['link']
+                  new = re.sub(r'hdnea=[^&\s"\'?]+', hdnea, old)
+                  if old != new:
+                      item['link'] = new
+                      updated_count += 1
+
+          with open(FILE, 'w', encoding='utf-8') as f:
+              json.dump(channels, f, indent=2, ensure_ascii=False)
+
+          print(f"Step 5: Updated {updated_count} channel(s) in {FILE}")
           PY
 
-      - name: Commit & Push if Changed
+      - name: Commit & Push Changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Slivtv.json
-          git diff --quiet && echo "No changes" || (
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
             git commit -m "Auto-update hdnea from SonyLIV API"
             git push
-          )
+            echo "Changes pushed!"
+          fi
