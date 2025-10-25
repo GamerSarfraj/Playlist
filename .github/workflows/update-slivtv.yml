@@ -1,12 +1,12 @@
-name: Update SonyLIV hdnea in Slivtv.json
+name: Update SonyLIV hdnea (No 403)
 
 on:
   schedule:
-    - cron: '0 */4 * * *'  # Har 4 ghante mein
+    - cron: '0 */4 * * *'   # Har 4 ghante mein
   workflow_dispatch:
 
 jobs:
-  update-hdnea:
+  update:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,107 +15,84 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install Requests
-        run: pip install requests
-
-      - name: Fetch hdnea & Update Slivtv.json
+      - name: Fetch hdnea using curl (Browser Simulation)
+        id: fetch_hdnea
         run: |
-          python - << 'PY'
-          import requests
-          import json
-          import re
-          import sys
-          import os
+          API_URL="https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729"
 
-          API_URL = "https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729"
-          FILE = "Slivtv.json"
+          echo "Fetching API with browser headers..."
+          RESPONSE=$(curl -s -L \
+            -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36' \
+            -H 'Accept: application/json, text/plain, */*' \
+            -H 'Accept-Language: en-US,en;q=0.9' \
+            -H 'Referer: https://www.sonyliv.com/' \
+            -H 'Origin: https://www.sonyliv.com' \
+            -H 'Connection: Orginal' \
+            "$API_URL")
 
-          print("Step 1: Fetching API JSON...")
-          try:
-              resp = requests.get(API_URL, timeout=20)
-              resp.raise_for_status()
-              data = resp.json()
-          except Exception as e:
-              print(f"API request failed: {e}")
-              sys.exit(1)
+          # Save for debugging
+          echo "$RESPONSE" > api_response.json
 
-          # Use videoURL instead of playbackUrl (as per API response)
-          video_url = data.get("result", {}).get("videoURL")
-          if not video_url:
-              print("ERROR: videoURL not found in API response")
-              print("API Response keys:", list(data.get("result", {}).keys()))
-              sys.exit(1)
+          # Extract videoURL
+          VIDEO_URL=$(echo "$RESPONSE" | grep -o '"videoURL":"[^"]*' | cut -d'"' -f4 | head -1)
+          if [ -z "$VIDEO_URL" ]; then
+            echo "videoURL not found!"
+            cat api_response.json
+            exit 1
+          fi
 
-          print(f"Step 2: Found videoURL → {video_url[:100]}...")
+          echo "Found videoURL: $VIDEO_URL"
 
-          print("Step 3: Downloading .mpd file...")
-          try:
-              mpd_resp = requests.get(video_url, timeout=20)
-              mpd_resp.raise_for_status()
-              mpd_content = mpd_resp.text
-          except Exception as e:
-              print(f"MPD download failed: {e}")
-              sys.exit(1)
+          # Download .mpd file
+          MPD_CONTENT=$(curl -s -L \
+            -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' \
+            -H 'Referer: https://www.sonyliv.com/' \
+            "$VIDEO_URL")
 
-          # Extract hdnea from .mpd content
-          hdnea_match = re.search(r'hdnea=[^&\s"\'?]+', mpd_content)
-          if not hdnea_match:
-              print("ERROR: hdnea not found in .mpd file")
-              print("First 500 chars of MPD:")
-              print(mpd_content[:500])
-              sys.exit(1)
+          # Extract hdnea
+          HDNEA=$(echo "$MPD_CONTENT" | grep -o 'hdnea=[^&" ]*' | head -1)
+          if [ -z "$HDNEA" ]; then
+            # Fallback: extract from videoURL itself
+            HDNEA=$(echo \"$VIDEO_URL\" | grep -o 'hdnea=[^&" ]*')
+          fi
 
-          hdnea = hdnea_match.group(0)
-          print(f"Step 4: Extracted hdnea → {hdnea}")
+          if [ -z "$HDNEA" ]; then
+            echo "hdnea not found!"
+            echo "MPD Sample:"
+            echo "$MPD_CONTENT" | head -20
+            exit 1
+          fi
 
-          # Check if file exists
-          if not os.path.exists(FILE):
-              print(f"ERROR: {FILE} not found in repository!")
-              sys.exit(1)
+          echo "Extracted hdnea: $HDNEA"
+          echo "HDNEA=$HDNEA" >> $GITHUB_OUTPUT
 
-          # Load JSON
-          try:
-              with open(FILE, 'r', encoding='utf-8') as f:
-                  channels = json.load(f)
-          except json.JSONDecodeError as e:
-              print(f"Invalid JSON in {FILE}: {e}")
-              sys.exit(1)
+      - name: Update Slivtv.json
+        run: |
+          HDNEA="${{ steps.fetch_hdnea.outputs.HDNEA }}"
+          FILE="Slivtv.json"
 
-          if not isinstance(channels, list):
-              print(f"ERROR: {FILE} must contain a JSON array (list of channels)")
-              sys.exit(1)
+          if [ ! -f "$FILE" ]; then
+            echo "$FILE not found!"
+            exit 1
+          fi
 
-          # Update links
-          updated = 0
-          for item in channels:
-              if isinstance(item, dict) and 'link' in item:
-                  old = item['link']
-                  new = re.sub(r'hdnea=[^&\s"\'?]+', hdnea, old)
-                  if old != new:
-                      item['link'] = new
-                      updated += 1
+          # Backup
+          cp "$FILE" "$FILE.bak"
 
-          # Save updated JSON
-          with open(FILE, 'w', encoding='utf-8') as f:
-              json.dump(channels, f, indent=2, ensure_ascii=False)
+          # Replace hdnea in all links
+          sed -i "s|hdnea=[^&\"' ]*|${HDNEA}|g" "$FILE"
 
-          print(f"Step 5: SUCCESS! Updated {updated} channel(s) in {FILE}")
-          PY
+          echo "Updated $FILE with new hdnea"
 
-      - name: Commit & Push Changes
+      - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Slivtv.json
           if git diff --staged --quiet; then
-            echo "No changes detected."
+            echo "No changes"
           else
-            git commit -m "Auto-update hdnea cookie from SonyLIV API"
+            git commit -m "Auto-update hdnea from SonyLIV (curl)"
             git push
-            echo "Changes pushed successfully!"
+            echo "Pushed!"
           fi
