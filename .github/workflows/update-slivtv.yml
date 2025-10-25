@@ -1,13 +1,12 @@
-name: Update SlivTV Cookies
+name: Update SlivTV hdnea Cookie
 
 on:
   schedule:
-    # Har 6 ghante mein chalega (aap badal sakte hain)
-    - cron: '0 */6 * * *'
-  workflow_dispatch: # Manual trigger bhi allowed
+    - cron: '0 */4 * * *'  # Har 4 ghante mein
+  workflow_dispatch:
 
 jobs:
-  update-cookies:
+  update-hdnea:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -25,46 +24,74 @@ jobs:
         run: |
           pip install requests
 
-      - name: Download & Extract hdnea Cookie
-        id: extract_cookie
+      - name: Fetch hdnea from SonyLIV API
+        id: fetch_hdnea
         run: |
-          API_URL="https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729"
-          RESPONSE=$(curl -s "$API_URL")
-          
-          # Extract hdnea parameter
-          HDNEA=$(echo "$RESPONSE" | grep -o 'hdnea=[^"]*' | head -1)
-          
-          if [ -z "$HDNEA" ]; then
-            echo "❌ hdnea not found in API response"
-            exit 1
-          fi
-          
-          echo "✅ Found hdnea: $HDNEA"
-          echo "HDNEA=$HDNEA" >> $GITHUB_OUTPUT
+          import requests
+          import re
+          import sys
 
-      - name: Update Slivtv.json with New Cookie
+          API_URL = "https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729"
+
+          try:
+              # Step 1: Get JSON response
+              resp = requests.get(API_URL, timeout=15)
+              resp.raise_for_status()
+              data = resp.json()
+
+              # Step 2: Extract playbackUrl
+              playback_url = data.get("result", {}).get("playbackUrl", "")
+              if not playback_url:
+                  print("playbackUrl not found in JSON")
+                  sys.exit(1)
+
+              print(f"Found playbackUrl: {playback_url[:80]}...")
+
+              # Step 3: Download HLS playlist
+              hls_resp = requests.get(playback_url, timeout=15)
+              hls_resp.raise_for_status()
+              hls_content = hls_resp.text
+
+              # Step 4: Extract hdnea from any .m3u8 URI
+              hdnea_match = re.search(r'(hdnea=[^\s"\'&]+)', hls_content)
+              if not hdnea_match:
+                  print("hdnea not found in HLS playlist")
+                  sys.exit(1)
+
+              hdnea = hdnea_match.group(1)
+              print(f"Extracted hdnea: {hdnea}")
+
+              # Output for next step
+              with open("$GITHUB_OUTPUT", "a") as f:
+                  f.write(f"HDNEA={hdnea}\n")
+
+          except Exception as e:
+              print(f"Error: {e}")
+              sys.exit(1)
+          """ > fetch_hdnea.py && python fetch_hdnea.py
+
+      - name: Update Slivtv.json with New hdnea
         run: |
-          HDNEA="${{ steps.extract_cookie.outputs.HDNEA }}"
+          HDNEA="${{ steps.fetch_hdnea.outputs.HDNEA }}"
           FILE="Slivtv.json"
-          
+
           if [ ! -f "$FILE" ]; then
-            echo "❌ $FILE not found!"
+            echo "Slivtv.json not found!"
             exit 1
           fi
-          
-          # Backup original
-          cp "$FILE" "$FILE.bak"
-          
-          # Replace hdnea in all links
-          sed -i "s|hdnea=[^&\"']*|${HDNEA}|g" "$FILE"
-          
-          echo "✅ Updated $FILE with new hdnea"
 
-      - name: Commit & Push Changes
+          # Backup
+          cp "$FILE" "$FILE.bak"
+
+          # Replace old hdnea with new one (only in links)
+          sed -i "s|hdnea=[^&\"']*|${HDNEA}|g" "$FILE"
+
+          echo "Updated Slivtv.json with new hdnea"
+
+      - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Slivtv.json
-          git commit -m "🔄 Auto-update hdnea cookie in Slivtv.json" || echo "No changes to commit"
+          git commit -m "Auto-update hdnea from SonyLIV API" || echo "No changes"
           git push
