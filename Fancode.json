@@ -1,7 +1,7 @@
 [
   {
     "logo": "https://images.fancode.com/aig/match/v1/134006_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Hobart Hurricanes Women Vs Brisbane Heat Women",
+    "name": "Brisbane Heat Women Vs Hobart Hurricanes Women",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/134006_english_hls_38d3216eed49844ta-di_h264/index.m3u8"
   },
   {
@@ -13,10 +13,5 @@
     "logo": "https://images.fancode.com/aig/match/v1/137319_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Day 3   World Feed",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137319_english_hls_5434c0d5e445896ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/118479_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Qualifying",
-    "link": "https://d3020wacio4oip.cloudfront.net/out/v1/5f1e4ce46ef14c48bd4eb88034da38ca/index.m3u8"
   }
 ]
