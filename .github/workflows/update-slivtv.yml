@@ -1,4 +1,4 @@
-name: Update SonyLIV hdnea (Auto Indian Proxy)
+name: Update SonyLIV hdnea (Advanced Browser Simulation)
 
 on:
   schedule:
@@ -15,81 +15,97 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Get Working Indian Proxy
-        id: proxy
-        run: |
-          echo "Downloading fresh Indian proxies..."
-          PROXY_LIST=$(curl -s "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt")
-          
-          # Filter India proxies (IN) and test first 5
-          INDIAN_PROXIES=$(echo "$PROXY_LIST" | grep -i "IN" | head -5)
-          
-          WORKING_PROXY=""
-          for PROXY in $INDIAN_PROXIES; do
-            echo "Testing proxy: $PROXY"
-            if curl -s --proxy "$PROXY" --max-time 10 "https://httpbin.org/ip" | grep -q "origin"; then
-              WORKING_PROXY="$PROXY"
-              echo "Working proxy found: $PROXY"
-              break
-            fi
-          done
-          
-          if [ -z "$WORKING_PROXY" ]; then
-            echo "No working Indian proxy found!"
-            exit 1
-          fi
-          
-          echo "PROXY=$WORKING_PROXY" >> $GITHUB_OUTPUT
-
-      - name: Fetch hdnea via Working Proxy
+      - name: Fetch hdnea with Advanced Headers
         id: fetch
         run: |
-          PROXY="${{ steps.proxy.outputs.PROXY }}"
           API_URL="https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729"
 
-          echo "Using proxy: $PROXY"
-          RESPONSE=$(curl -s --proxy "$PROXY" \
-            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
-            -H "Referer: https://www.sonyliv.com/" \
+          echo "Simulating real browser request..."
+
+          # Full browser headers (2025 updated)
+          RESPONSE=$(curl -s -L --max-time 15 \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0" \
+            -H "Accept: application/json, text/plain, */*" \
+            -H "Accept-Language: en-US,en;q=0.9,hi;q=0.8" \
+            -H "Accept-Encoding: gzip, deflate, br" \
+            -H "DNT: 1" \
+            -H "Connection: keep-alive" \
+            -H "Upgrade-Insecure-Requests: 1" \
+            -H "Sec-Fetch-Dest: empty" \
+            -H "Sec-Fetch-Mode: cors" \
+            -H "Sec-Fetch-Site: same-site" \
+            -H "Cache-Control: max-age=0" \
+            -H "Sec-Ch-Ua: \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"129\", \"Microsoft Edge\";v=\"129\"" \
+            -H "Sec-Ch-Ua-Mobile: ?0" \
+            -H "Sec-Ch-Ua-Platform: \"Windows\"" \
+            -H "Referer: https://www.sonyliv.com/shows/sethd-1000000001/" \
+            -H "Origin: https://www.sonyliv.com" \
+            -H "X-Requested-With: XMLHttpRequest" \
+            -b "cookies.txt" \
             "$API_URL")
 
-          echo "$RESPONSE" > debug.json
+          # Save for debug
+          echo "$RESPONSE" > api_response.json
 
-          if echo "$RESPONSE" | grep -q "EPDblocked"; then
-            echo "Proxy blocked by SonyLIV!"
-            cat debug.json
+          # Check for block
+          if echo "$RESPONSE" | grep -q "EPDblocked\|AKA_0403_PANIC\|VPN"; then
+            echo "❌ SonyLIV blocked request!"
+            echo "Response:"
+            cat api_response.json
             exit 1
           fi
 
-          VIDEO_URL=$(echo "$RESPONSE" | grep -o '"videoURL":"[^"]*' | cut -d'"' -f4)
+          # Extract videoURL
+          VIDEO_URL=$(echo "$RESPONSE" | grep -o '"videoURL":"[^"]*' | cut -d'"' -f4 | sed 's/\\//g' | head -1)
           if [ -z "$VIDEO_URL" ]; then
-            echo "videoURL not found!"
+            echo "❌ videoURL not found!"
+            echo "Full Response:"
+            head -50 api_response.json
             exit 1
           fi
 
-          HDNEA=$(echo "$VIDEO_URL" | grep -o 'hdnea=[^& ]*')
+          echo "✅ Found videoURL: ${VIDEO_URL:0:100}..."
+
+          # Extract hdnea
+          HDNEA=$(echo "$VIDEO_URL" | grep -o 'hdnea=[^&"]*' | head -1)
           if [ -z "$HDNEA" ]; then
-            echo "hdnea not found!"
+            echo "❌ hdnea not found!"
             exit 1
           fi
 
+          echo "✅ Extracted hdnea: $HDNEA"
           echo "HDNEA=$HDNEA" >> $GITHUB_OUTPUT
 
       - name: Update Slivtv.json
         run: |
           HDNEA="${{ steps.fetch.outputs.HDNEA }}"
           FILE="Slivtv.json"
-          
+
+          if [ ! -f "$FILE" ]; then
+            echo "❌ $FILE not found!"
+            exit 1
+          fi
+
+          # Backup
           cp "$FILE" "$FILE.bak"
+
+          # Update all links
           sed -i "s|hdnea=[^&\"' ]*|${HDNEA}|g" "$FILE"
-          echo "Updated $FILE"
+
+          # Count updates
+          UPDATED=$(grep -c "hdnea=" "$FILE")
+          echo "✅ Updated $FILE - Found $UPDATED links"
 
       - name: Commit & Push
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Slivtv.json
+
           if git diff --staged --quiet; then
-            echo "No changes"
+            echo "No changes to commit"
           else
-            git commit -m "Auto-update hdnea (Indian proxy)"
+            git commit -m "🔄 Auto-update hdnea cookie (advanced headers)"
             git push
+            echo "✅ Pushed updated Slivtv.json!"
           fi
