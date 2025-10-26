@@ -1,4 +1,4 @@
-name: Update SonyLIV hdnea (Puppeteer - Real Browser)
+name: Update SonyLIV hdnea (Puppeteer - Ubuntu 22.04)
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   update:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # ← YE CHANGE KIYA (Ubuntu 22.04)
     permissions:
       contents: write
 
@@ -20,14 +20,44 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Puppeteer Dependencies
+      - name: Install Puppeteer Dependencies (Ubuntu 22.04)
         run: |
           sudo apt-get update
-          sudo apt-get install -y ca-certificates fonts-liberation libasound2 libatk-bridge2.0-0 \
-            libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 \
-            libgbm1 libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 \
-            libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxdamage1 libxrandr2 \
-            libxshmfence1 libxss1 libxtst6 lsb-release wget xdg-utils
+          sudo apt-get install -y \
+            ca-certificates \
+            fonts-liberation \
+            libasound2 \
+            libatk-bridge2.0-0 \
+            libatk1.0-0 \
+            libc6 \
+            libcairo2 \
+            libcups2 \
+            libdbus-1-3 \
+            libexpat1 \
+            libfontconfig1 \
+            libgbm1 \
+            libgcc1 \
+            libglib2.0-0 \
+            libgtk-3-0 \
+            libnspr4 \
+            libnss3 \
+            libpango-1.0-0 \
+            libx11-6 \
+            libx11-xcb1 \
+            libxcb1 \
+            libxcomposite1 \
+            libxcursor1 \
+            libxdamage1 \
+            libxext6 \
+            libxfixes3 \
+            libxi6 \
+            libxrandr2 \
+            libxrender1 \
+            libxss1 \
+            libxtst6 \
+            lsb-release \
+            wget \
+            xdg-utils
 
       - name: Install Puppeteer
         run: npm install puppeteer@23.0.0
@@ -40,28 +70,30 @@ jobs:
           const fs = require('fs');
 
           (async () => {
-            console.log("Launching headless Chrome...");
+            console.log("Launching Chrome on Ubuntu 22.04...");
             const browser = await puppeteer.launch({
               headless: true,
-              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage']
+              args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-gpu',
+                '--disable-dev-shm-usage',
+                '--disable-web-security',
+                '--allow-running-insecure-content',
+                '--disable-features=IsolateOrigins,site-per-process'
+              ]
             });
 
             const page = await browser.newPage();
-
-            // Set real browser headers
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
-            await page.setExtraHTTPHeaders({
-              'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
-              'Referer': 'https://www.sonyliv.com/shows/sethd-1000000001/',
-              'Origin': 'https://www.sonyliv.com'
+
+            console.log("Visiting SonyLIV show page...");
+            await page.goto('https://www.sonyliv.com/shows/sethd-1000000001/', {
+              waitUntil: 'networkidle2',
+              timeout: 30000
             });
 
-            // Go to SonyLIV show page first (to set cookies)
-            console.log("Visiting SonyLIV show page...");
-            await page.goto('https://www.sonyliv.com/shows/sethd-1000000001/', { waitUntil: 'networkidle2', timeout: 30000 });
-
-            // Now call API
-            console.log("Calling API...");
+            console.log("Calling API via browser...");
             const response = await page.evaluate(async () => {
               const res = await fetch('https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729', {
                 headers: {
@@ -72,14 +104,10 @@ jobs:
               return await res.json();
             });
 
-            // Save response
             fs.writeFileSync('api_response.json', JSON.stringify(response, null, 2));
-            console.log("API Response saved.");
 
-            // Check for block
-            if (response.resultCode === 'KO' && response.message?.includes('EPDblocked')) {
-              console.log("BLOCKED by SonyLIV!");
-              console.log(JSON.stringify(response, null, 2));
+            if (response.resultCode !== 'OK') {
+              console.log("BLOCKED or ERROR:", response.message || response.resultCode);
               process.exit(1);
             }
 
@@ -89,17 +117,14 @@ jobs:
               process.exit(1);
             }
 
-            const hdneaMatch = videoURL.match(/hdnea=[^&"']+/);
-            if (!hdneaMatch) {
-              console.log("hdnea not found in videoURL!");
+            const hdnea = videoURL.match(/hdnea=[^&"']+/)?.[0];
+            if (!hdnea) {
+              console.log("hdnea not found!");
               process.exit(1);
             }
 
-            const hdnea = hdneaMatch[0];
-            console.log("SUCCESS! Extracted hdnea:", hdnea);
-
-            // Output for GitHub
-            fs.writeFileSync(process.env.GITHUB_OUTPUT, `HDNEA=${hdnea}\n`, { flag: 'a' });
+            console.log("SUCCESS! hdnea =", hdnea);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `HDNEA=${hdnea}\n`);
 
             await browser.close();
           })();
@@ -109,15 +134,10 @@ jobs:
         run: |
           HDNEA=$(grep "HDNEA=" $GITHUB_OUTPUT | cut -d= -f2-)
           FILE="Slivtv.json"
-
-          if [ ! -f "$FILE" ]; then
-            echo "$FILE not found!"
-            exit 1
-          fi
-
+          
           cp "$FILE" "$FILE.bak"
           sed -i "s|hdnea=[^&\"' ]*|${HDNEA}|g" "$FILE"
-          echo "Updated $FILE with new hdnea"
+          echo "Updated $FILE"
 
       - name: Commit & Push
         run: |
@@ -127,7 +147,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "Auto-update hdnea (puppeteer)"
+            git commit -m "Auto-update hdnea (puppeteer ubuntu-22.04)"
             git push
-            echo "Pushed!"
           fi
