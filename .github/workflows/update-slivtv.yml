@@ -1,4 +1,4 @@
-name: Update SonyLIV hdnea (Compressed Response Fix)
+name: Update SonyLIV hdnea (GZIP Fix + Valid YAML)
 
 on:
   schedule:
@@ -15,15 +15,15 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Fetch hdnea (Fix: Decompress GZIP)
+      - name: Fetch hdnea (GZIP Decompress + Valid Syntax)
         id: fetch
         run: |
           API_URL="https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729"
 
-          echo "Fetching with full browser headers + decompression..."
+          echo "Fetching with browser headers + gzip decompression..."
 
-          RESPONSE=$(curl -s -L --max-time 20 \
-            --compressed \  # <-- YE LINE ADD KIYA (GZIP FIX)
+          # Fixed: --compressed on same line, no invalid \
+          RESPONSE=$(curl -s -L --max-time 20 --compressed \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0" \
             -H "Accept: application/json, text/plain, */*" \
             -H "Accept-Language: en-US,en;q=0.9,hi;q=0.8" \
@@ -43,28 +43,23 @@ jobs:
             -H "X-Requested-With: XMLHttpRequest" \
             "$API_URL")
 
-          # Save raw response
           echo "$RESPONSE" > api_response.json
 
-          # Check for block
           if echo "$RESPONSE" | grep -q "EPDblocked\|AKA_0403_PANIC\|VPN"; then
             echo "BLOCKED by SonyLIV!"
-            echo "Response:"
             cat api_response.json
             exit 1
           fi
 
-          # Extract videoURL
           VIDEO_URL=$(echo "$RESPONSE" | grep -o '"videoURL":"[^"]*' | cut -d'"' -f4 | head -1)
           if [ -z "$VIDEO_URL" ]; then
-            echo "videoURL not found! Raw response:"
+            echo "videoURL not found!"
             cat api_response.json
             exit 1
           fi
 
           echo "Found videoURL: ${VIDEO_URL:0:120}..."
 
-          # Extract hdnea
           HDNEA=$(echo "$VIDEO_URL" | grep -o 'hdnea=[^&"]*' | head -1)
           if [ -z "$HDNEA" ]; then
             echo "hdnea not found!"
@@ -96,7 +91,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "Auto-update hdnea (gzip fix)"
+            git commit -m "Auto-update hdnea (gzip + yaml fix)"
             git push
             echo "Pushed!"
           fi
