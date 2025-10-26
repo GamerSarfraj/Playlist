@@ -1,4 +1,4 @@
-name: Update SonyLIV hdnea
+name: Update SonyLIV hdnea (Puppeteer - Direct API)
 
 on:
   schedule:
@@ -34,7 +34,7 @@ jobs:
       - name: Install Puppeteer
         run: npm install puppeteer@23.0.0
 
-      - name: Fetch hdnea (Puppeteer + Full Debug)
+      - name: Fetch hdnea (Direct API via Browser)
         id: fetch
         run: |
           node << 'JS'
@@ -42,17 +42,10 @@ jobs:
           const fs = require('fs');
 
           (async () => {
-            console.log("Launching headless Chrome...");
+            console.log("Launching Chrome...");
             const browser = await puppeteer.launch({
               headless: true,
-              args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-gpu',
-                '--disable-dev-shm-usage',
-                '--disable-web-security',
-                '--disable-features=IsolateOrigins,site-per-process'
-              ]
+              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage']
             });
 
             const page = await browser.newPage();
@@ -61,72 +54,52 @@ jobs:
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
             await page.setExtraHTTPHeaders({
               'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
-              'Referer': 'https://www.sonyliv.com/',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json, text/plain, */*',
+              'Referer': 'https://www.sonyliv.com/shows/sethd-1000000001/',
               'Origin': 'https://www.sonyliv.com'
             });
 
-            console.log("Visiting SonyLIV homepage...");
-            await page.goto('https://www.sonyliv.com/', { waitUntil: 'networkidle2', timeout: 30000 });
-
+            // Direct API call
             console.log("Calling API directly...");
             const response = await page.evaluate(async () => {
-              try {
-                const res = await fetch('https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729', {
-                  method: 'GET',
-                  headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json, text/plain, */*',
-                    'Referer': 'https://www.sonyliv.com/',
-                    'Origin': 'https://www.sonyliv.com'
-                  },
-                  credentials: 'include'
-                });
-                return await res.json();
-              } catch (e) {
-                return { error: e.message };
-              }
+              const res = await fetch('https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729', {
+                method: 'GET',
+                credentials: 'include'
+              });
+              return await res.json();
             });
 
-            // Save full response
+            // Save response
             fs.writeFileSync('api_response.json', JSON.stringify(response, null, 2));
-            console.log("Full API Response saved to api_response.json");
+            console.log("API Response saved.");
 
-            // Print keys for debugging
-            console.log("Response keys:", Object.keys(response));
+            // Debug
+            console.log("Top-level keys:", Object.keys(response).join(', '));
 
-            // Try multiple paths
-            let videoURL = null;
-
-            if (response.result?.videoURL) {
-              videoURL = response.result.videoURL;
-            } else if (response.resultObj?.videoURL) {
-              videoURL = response.resultObj.videoURL;
-            } else if (response.videoURL) {
-              videoURL = response.videoURL;
-            } else if (typeof response === 'string') {
-              const match = response.match(/"videoURL":"([^"]+)"/);
-              if (match) videoURL = match[1];
+            if (response.resultCode !== 'OK') {
+              console.log("API FAILED:", response.message || response.errorDescription);
+              process.exit(1);
             }
 
+            // Extract videoURL
+            let videoURL = response.result?.videoURL || response.resultObj?.videoURL || response.videoURL;
             if (!videoURL) {
-              console.log("videoURL NOT FOUND in any path!");
-              console.log("Available top-level keys:", Object.keys(response).join(', '));
+              console.log("videoURL NOT FOUND!");
               process.exit(1);
             }
 
             console.log("Found videoURL:", videoURL.substring(0, 120) + "...");
 
-            const hdneaMatch = videoURL.match(/hdnea=[^&"'\s]+/);
-            if (!hdneaMatch) {
-              console.log("hdnea parameter NOT FOUND in videoURL!");
+            const hdnea = videoURL.match(/hdnea=[^&\s"']+/)?.[0];
+            if (!hdnea) {
+              console.log("hdnea NOT FOUND in URL!");
               process.exit(1);
             }
 
-            const hdnea = hdneaMatch[0];
-            console.log("SUCCESS! Extracted hdnea:", hdnea);
-
-            // Output
+            console.log("SUCCESS! hdnea =", hdnea);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `HDNEA=${hdnea}\n`);
+
             await browser.close();
           })();
           JS
@@ -135,25 +108,16 @@ jobs:
         run: |
           HDNEA=$(grep "HDNEA=" $GITHUB_OUTPUT | cut -d= -f2-)
           FILE="Slivtv.json"
-
-          if [ ! -f "$FILE" ]; then
-            echo "$FILE not found!"
-            exit 1
-          fi
-
           cp "$FILE" "$FILE.bak"
           sed -i "s|hdnea=[^&\"' ]*|${HDNEA}|g" "$FILE"
-          echo "Updated $FILE with new hdnea"
+          echo "Updated $FILE"
 
       - name: Commit & Push
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Slivtv.json
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "Auto-update hdnea (puppeteer debug)"
+            git commit -m "Auto-update hdnea (direct API)"
             git push
-            echo "Pushed!"
           fi
