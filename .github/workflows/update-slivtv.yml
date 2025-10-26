@@ -1,4 +1,4 @@
-name: Update SonyLIV hdnea (GZIP Fix + Valid YAML)
+name: Update SonyLIV hdnea (Puppeteer - Real Browser)
 
 on:
   schedule:
@@ -15,63 +15,99 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Fetch hdnea (GZIP Decompress + Valid Syntax)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Puppeteer Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates fonts-liberation libasound2 libatk-bridge2.0-0 \
+            libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 \
+            libgbm1 libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 \
+            libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxdamage1 libxrandr2 \
+            libxshmfence1 libxss1 libxtst6 lsb-release wget xdg-utils
+
+      - name: Install Puppeteer
+        run: npm install puppeteer@23.0.0
+
+      - name: Fetch hdnea with Real Browser
         id: fetch
         run: |
-          API_URL="https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729"
+          node << 'JS'
+          const puppeteer = require('puppeteer');
+          const fs = require('fs');
 
-          echo "Fetching with browser headers + gzip decompression..."
+          (async () => {
+            console.log("Launching headless Chrome...");
+            const browser = await puppeteer.launch({
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage']
+            });
 
-          # Fixed: --compressed on same line, no invalid \
-          RESPONSE=$(curl -s -L --max-time 20 --compressed \
-            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0" \
-            -H "Accept: application/json, text/plain, */*" \
-            -H "Accept-Language: en-US,en;q=0.9,hi;q=0.8" \
-            -H "Accept-Encoding: gzip, deflate, br" \
-            -H "DNT: 1" \
-            -H "Connection: keep-alive" \
-            -H "Upgrade-Insecure-Requests: 1" \
-            -H "Sec-Fetch-Dest: empty" \
-            -H "Sec-Fetch-Mode: cors" \
-            -H "Sec-Fetch-Site: same-site" \
-            -H "Cache-Control: max-age=0" \
-            -H "Sec-Ch-Ua: \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"129\", \"Microsoft Edge\";v=\"129\"" \
-            -H "Sec-Ch-Ua-Mobile: ?0" \
-            -H "Sec-Ch-Ua-Platform: \"Windows\"" \
-            -H "Referer: https://www.sonyliv.com/shows/sethd-1000000001/" \
-            -H "Origin: https://www.sonyliv.com" \
-            -H "X-Requested-With: XMLHttpRequest" \
-            "$API_URL")
+            const page = await browser.newPage();
 
-          echo "$RESPONSE" > api_response.json
+            // Set real browser headers
+            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
+            await page.setExtraHTTPHeaders({
+              'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
+              'Referer': 'https://www.sonyliv.com/shows/sethd-1000000001/',
+              'Origin': 'https://www.sonyliv.com'
+            });
 
-          if echo "$RESPONSE" | grep -q "EPDblocked\|AKA_0403_PANIC\|VPN"; then
-            echo "BLOCKED by SonyLIV!"
-            cat api_response.json
-            exit 1
-          fi
+            // Go to SonyLIV show page first (to set cookies)
+            console.log("Visiting SonyLIV show page...");
+            await page.goto('https://www.sonyliv.com/shows/sethd-1000000001/', { waitUntil: 'networkidle2', timeout: 30000 });
 
-          VIDEO_URL=$(echo "$RESPONSE" | grep -o '"videoURL":"[^"]*' | cut -d'"' -f4 | head -1)
-          if [ -z "$VIDEO_URL" ]; then
-            echo "videoURL not found!"
-            cat api_response.json
-            exit 1
-          fi
+            // Now call API
+            console.log("Calling API...");
+            const response = await page.evaluate(async () => {
+              const res = await fetch('https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729', {
+                headers: {
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'Accept': 'application/json'
+                }
+              });
+              return await res.json();
+            });
 
-          echo "Found videoURL: ${VIDEO_URL:0:120}..."
+            // Save response
+            fs.writeFileSync('api_response.json', JSON.stringify(response, null, 2));
+            console.log("API Response saved.");
 
-          HDNEA=$(echo "$VIDEO_URL" | grep -o 'hdnea=[^&"]*' | head -1)
-          if [ -z "$HDNEA" ]; then
-            echo "hdnea not found!"
-            exit 1
-          fi
+            // Check for block
+            if (response.resultCode === 'KO' && response.message?.includes('EPDblocked')) {
+              console.log("BLOCKED by SonyLIV!");
+              console.log(JSON.stringify(response, null, 2));
+              process.exit(1);
+            }
 
-          echo "Extracted hdnea: $HDNEA"
-          echo "HDNEA=$HDNEA" >> $GITHUB_OUTPUT
+            const videoURL = response.result?.videoURL;
+            if (!videoURL) {
+              console.log("videoURL not found!");
+              process.exit(1);
+            }
+
+            const hdneaMatch = videoURL.match(/hdnea=[^&"']+/);
+            if (!hdneaMatch) {
+              console.log("hdnea not found in videoURL!");
+              process.exit(1);
+            }
+
+            const hdnea = hdneaMatch[0];
+            console.log("SUCCESS! Extracted hdnea:", hdnea);
+
+            // Output for GitHub
+            fs.writeFileSync(process.env.GITHUB_OUTPUT, `HDNEA=${hdnea}\n`, { flag: 'a' });
+
+            await browser.close();
+          })();
+          JS
 
       - name: Update Slivtv.json
         run: |
-          HDNEA="${{ steps.fetch.outputs.HDNEA }}"
+          HDNEA=$(grep "HDNEA=" $GITHUB_OUTPUT | cut -d= -f2-)
           FILE="Slivtv.json"
 
           if [ ! -f "$FILE" ]; then
@@ -81,7 +117,7 @@ jobs:
 
           cp "$FILE" "$FILE.bak"
           sed -i "s|hdnea=[^&\"' ]*|${HDNEA}|g" "$FILE"
-          echo "Updated $FILE"
+          echo "Updated $FILE with new hdnea"
 
       - name: Commit & Push
         run: |
@@ -91,7 +127,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "Auto-update hdnea (gzip + yaml fix)"
+            git commit -m "Auto-update hdnea (puppeteer)"
             git push
             echo "Pushed!"
           fi
