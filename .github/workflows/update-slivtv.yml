@@ -1,4 +1,4 @@
-name: Update SonyLIV hdnea (Puppeteer - Ubuntu 22.04)
+name: Update SonyLIV hdnea
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   update:
-    runs-on: ubuntu-22.04  # ← YE CHANGE KIYA (Ubuntu 22.04)
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
 
@@ -20,49 +20,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Puppeteer Dependencies (Ubuntu 22.04)
+      - name: Install Puppeteer Dependencies
         run: |
-          sudo apt-get update
+          sudo apt-get update -qq
           sudo apt-get install -y \
-            ca-certificates \
-            fonts-liberation \
-            libasound2 \
-            libatk-bridge2.0-0 \
-            libatk1.0-0 \
-            libc6 \
-            libcairo2 \
-            libcups2 \
-            libdbus-1-3 \
-            libexpat1 \
-            libfontconfig1 \
-            libgbm1 \
-            libgcc1 \
-            libglib2.0-0 \
-            libgtk-3-0 \
-            libnspr4 \
-            libnss3 \
-            libpango-1.0-0 \
-            libx11-6 \
-            libx11-xcb1 \
-            libxcb1 \
-            libxcomposite1 \
-            libxcursor1 \
-            libxdamage1 \
-            libxext6 \
-            libxfixes3 \
-            libxi6 \
-            libxrandr2 \
-            libxrender1 \
-            libxss1 \
-            libxtst6 \
-            lsb-release \
-            wget \
-            xdg-utils
+            ca-certificates fonts-liberation libasound2 libatk-bridge2.0-0 \
+            libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 \
+            libfontconfig1 libgbm1 libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 \
+            libnss3 libpango-1.0-0 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 \
+            libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 \
+            libxrender1 libxss1 libxtst6 lsb-release wget xdg-utils
 
       - name: Install Puppeteer
         run: npm install puppeteer@23.0.0
 
-      - name: Fetch hdnea with Real Browser
+      - name: Fetch hdnea (Puppeteer + Full Debug)
         id: fetch
         run: |
           node << 'JS'
@@ -70,7 +42,7 @@ jobs:
           const fs = require('fs');
 
           (async () => {
-            console.log("Launching Chrome on Ubuntu 22.04...");
+            console.log("Launching headless Chrome...");
             const browser = await puppeteer.launch({
               headless: true,
               args: [
@@ -79,53 +51,82 @@ jobs:
                 '--disable-gpu',
                 '--disable-dev-shm-usage',
                 '--disable-web-security',
-                '--allow-running-insecure-content',
                 '--disable-features=IsolateOrigins,site-per-process'
               ]
             });
 
             const page = await browser.newPage();
+
+            // Set real headers
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
-
-            console.log("Visiting SonyLIV show page...");
-            await page.goto('https://www.sonyliv.com/shows/sethd-1000000001/', {
-              waitUntil: 'networkidle2',
-              timeout: 30000
+            await page.setExtraHTTPHeaders({
+              'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
+              'Referer': 'https://www.sonyliv.com/',
+              'Origin': 'https://www.sonyliv.com'
             });
 
-            console.log("Calling API via browser...");
+            console.log("Visiting SonyLIV homepage...");
+            await page.goto('https://www.sonyliv.com/', { waitUntil: 'networkidle2', timeout: 30000 });
+
+            console.log("Calling API directly...");
             const response = await page.evaluate(async () => {
-              const res = await fetch('https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729', {
-                headers: {
-                  'X-Requested-With': 'XMLHttpRequest',
-                  'Accept': 'application/json'
-                }
-              });
-              return await res.json();
+              try {
+                const res = await fetch('https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729', {
+                  method: 'GET',
+                  headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Referer': 'https://www.sonyliv.com/',
+                    'Origin': 'https://www.sonyliv.com'
+                  },
+                  credentials: 'include'
+                });
+                return await res.json();
+              } catch (e) {
+                return { error: e.message };
+              }
             });
 
+            // Save full response
             fs.writeFileSync('api_response.json', JSON.stringify(response, null, 2));
+            console.log("Full API Response saved to api_response.json");
 
-            if (response.resultCode !== 'OK') {
-              console.log("BLOCKED or ERROR:", response.message || response.resultCode);
-              process.exit(1);
+            // Print keys for debugging
+            console.log("Response keys:", Object.keys(response));
+
+            // Try multiple paths
+            let videoURL = null;
+
+            if (response.result?.videoURL) {
+              videoURL = response.result.videoURL;
+            } else if (response.resultObj?.videoURL) {
+              videoURL = response.resultObj.videoURL;
+            } else if (response.videoURL) {
+              videoURL = response.videoURL;
+            } else if (typeof response === 'string') {
+              const match = response.match(/"videoURL":"([^"]+)"/);
+              if (match) videoURL = match[1];
             }
 
-            const videoURL = response.result?.videoURL;
             if (!videoURL) {
-              console.log("videoURL not found!");
+              console.log("videoURL NOT FOUND in any path!");
+              console.log("Available top-level keys:", Object.keys(response).join(', '));
               process.exit(1);
             }
 
-            const hdnea = videoURL.match(/hdnea=[^&"']+/)?.[0];
-            if (!hdnea) {
-              console.log("hdnea not found!");
+            console.log("Found videoURL:", videoURL.substring(0, 120) + "...");
+
+            const hdneaMatch = videoURL.match(/hdnea=[^&"'\s]+/);
+            if (!hdneaMatch) {
+              console.log("hdnea parameter NOT FOUND in videoURL!");
               process.exit(1);
             }
 
-            console.log("SUCCESS! hdnea =", hdnea);
+            const hdnea = hdneaMatch[0];
+            console.log("SUCCESS! Extracted hdnea:", hdnea);
+
+            // Output
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `HDNEA=${hdnea}\n`);
-
             await browser.close();
           })();
           JS
@@ -134,10 +135,15 @@ jobs:
         run: |
           HDNEA=$(grep "HDNEA=" $GITHUB_OUTPUT | cut -d= -f2-)
           FILE="Slivtv.json"
-          
+
+          if [ ! -f "$FILE" ]; then
+            echo "$FILE not found!"
+            exit 1
+          fi
+
           cp "$FILE" "$FILE.bak"
           sed -i "s|hdnea=[^&\"' ]*|${HDNEA}|g" "$FILE"
-          echo "Updated $FILE"
+          echo "Updated $FILE with new hdnea"
 
       - name: Commit & Push
         run: |
@@ -147,6 +153,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "Auto-update hdnea (puppeteer ubuntu-22.04)"
+            git commit -m "Auto-update hdnea (puppeteer debug)"
             git push
+            echo "Pushed!"
           fi
