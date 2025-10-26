@@ -15,8 +15,18 @@
     "link": "https://in-mc-fdlive.fancode.com/mumbai/130925_bengali_hls_d0860edbe268436adfreeta-di_h264/index.m3u8"
   },
   {
+    "logo": "https://images.fancode.com/aig/match/v1/130926_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Ca Osasuna Vs Rc Celta",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/130926_english_hls_a5c3b5759476625adfreeta-di_h264/index.m3u8"
+  },
+  {
     "logo": "https://images.fancode.com/aig/match/v1/137730_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Paarl Rapids Vs Paarl Rocks",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/137730_english_hls_20a10139d775404ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/137613_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Sporting De Gij\u00f3n Vs Real Zaragoza",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/137613_english_hls_373c41c4e593199ta-di_h264/index.m3u8"
   }
 ]
