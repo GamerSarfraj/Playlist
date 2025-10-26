@@ -1,8 +1,8 @@
-name: Update SonyLIV hdnea (Advanced Browser Simulation)
+name: Update SonyLIV hdnea (Compressed Response Fix)
 
 on:
   schedule:
-    - cron: '0 */3 * * *'   # Har 3 ghante mein
+    - cron: '0 */3 * * *'
   workflow_dispatch:
 
 jobs:
@@ -15,15 +15,15 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Fetch hdnea with Advanced Headers
+      - name: Fetch hdnea (Fix: Decompress GZIP)
         id: fetch
         run: |
           API_URL="https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729"
 
-          echo "Simulating real browser request..."
+          echo "Fetching with full browser headers + decompression..."
 
-          # Full browser headers (2025 updated)
-          RESPONSE=$(curl -s -L --max-time 15 \
+          RESPONSE=$(curl -s -L --max-time 20 \
+            --compressed \  # <-- YE LINE ADD KIYA (GZIP FIX)
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0" \
             -H "Accept: application/json, text/plain, */*" \
             -H "Accept-Language: en-US,en;q=0.9,hi;q=0.8" \
@@ -41,39 +41,37 @@ jobs:
             -H "Referer: https://www.sonyliv.com/shows/sethd-1000000001/" \
             -H "Origin: https://www.sonyliv.com" \
             -H "X-Requested-With: XMLHttpRequest" \
-            -b "cookies.txt" \
             "$API_URL")
 
-          # Save for debug
+          # Save raw response
           echo "$RESPONSE" > api_response.json
 
           # Check for block
           if echo "$RESPONSE" | grep -q "EPDblocked\|AKA_0403_PANIC\|VPN"; then
-            echo "❌ SonyLIV blocked request!"
+            echo "BLOCKED by SonyLIV!"
             echo "Response:"
             cat api_response.json
             exit 1
           fi
 
           # Extract videoURL
-          VIDEO_URL=$(echo "$RESPONSE" | grep -o '"videoURL":"[^"]*' | cut -d'"' -f4 | sed 's/\\//g' | head -1)
+          VIDEO_URL=$(echo "$RESPONSE" | grep -o '"videoURL":"[^"]*' | cut -d'"' -f4 | head -1)
           if [ -z "$VIDEO_URL" ]; then
-            echo "❌ videoURL not found!"
-            echo "Full Response:"
-            head -50 api_response.json
+            echo "videoURL not found! Raw response:"
+            cat api_response.json
             exit 1
           fi
 
-          echo "✅ Found videoURL: ${VIDEO_URL:0:100}..."
+          echo "Found videoURL: ${VIDEO_URL:0:120}..."
 
           # Extract hdnea
           HDNEA=$(echo "$VIDEO_URL" | grep -o 'hdnea=[^&"]*' | head -1)
           if [ -z "$HDNEA" ]; then
-            echo "❌ hdnea not found!"
+            echo "hdnea not found!"
             exit 1
           fi
 
-          echo "✅ Extracted hdnea: $HDNEA"
+          echo "Extracted hdnea: $HDNEA"
           echo "HDNEA=$HDNEA" >> $GITHUB_OUTPUT
 
       - name: Update Slivtv.json
@@ -82,30 +80,23 @@ jobs:
           FILE="Slivtv.json"
 
           if [ ! -f "$FILE" ]; then
-            echo "❌ $FILE not found!"
+            echo "$FILE not found!"
             exit 1
           fi
 
-          # Backup
           cp "$FILE" "$FILE.bak"
-
-          # Update all links
           sed -i "s|hdnea=[^&\"' ]*|${HDNEA}|g" "$FILE"
-
-          # Count updates
-          UPDATED=$(grep -c "hdnea=" "$FILE")
-          echo "✅ Updated $FILE - Found $UPDATED links"
+          echo "Updated $FILE"
 
       - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Slivtv.json
-
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "No changes"
           else
-            git commit -m "🔄 Auto-update hdnea cookie (advanced headers)"
+            git commit -m "Auto-update hdnea (gzip fix)"
             git push
-            echo "✅ Pushed updated Slivtv.json!"
+            echo "Pushed!"
           fi
