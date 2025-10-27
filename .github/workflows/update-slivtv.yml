@@ -1,13 +1,13 @@
-name: Update SonyLIV hdnea (Puppeteer - Direct API)
+name: Update SonyLIV hdnea (No 403)
 
 on:
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '0 */4 * * *'   # Har 4 ghante mein
   workflow_dispatch:
 
 jobs:
   update:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       contents: write
 
@@ -15,109 +15,85 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Puppeteer Dependencies
+      - name: Fetch hdnea using curl (Browser Simulation)
+        id: fetch_hdnea
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y \
-            ca-certificates fonts-liberation libasound2 libatk-bridge2.0-0 \
-            libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 \
-            libfontconfig1 libgbm1 libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 \
-            libnss3 libpango-1.0-0 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 \
-            libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 \
-            libxrender1 libxss1 libxtst6 lsb-release wget xdg-utils
+          API_URL="https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729"
 
-      - name: Install Puppeteer
-        run: npm install puppeteer@23.0.0
+          echo "Fetching API with browser headers..."
+          RESPONSE=$(curl -s -L \
+            -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36' \
+            -H 'Accept: application/json, text/plain, */*' \
+            -H 'Accept-Language: en-US,en;q=0.9' \
+            -H 'Referer: https://www.sonyliv.com/' \
+            -H 'Origin: https://www.sonyliv.com' \
+            -H 'Connection: Orginal' \
+            "$API_URL")
 
-      - name: Fetch hdnea (Direct API via Browser)
-        id: fetch
-        run: |
-          node << 'JS'
-          const puppeteer = require('puppeteer');
-          const fs = require('fs');
+          # Save for debugging
+          echo "$RESPONSE" > api_response.json
 
-          (async () => {
-            console.log("Launching Chrome...");
-            const browser = await puppeteer.launch({
-              headless: true,
-              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage']
-            });
+          # Extract videoURL
+          VIDEO_URL=$(echo "$RESPONSE" | grep -o '"videoURL":"[^"]*' | cut -d'"' -f4 | head -1)
+          if [ -z "$VIDEO_URL" ]; then
+            echo "videoURL not found!"
+            cat api_response.json
+            exit 1
+          fi
 
-            const page = await browser.newPage();
+          echo "Found videoURL: $VIDEO_URL"
 
-            // Set real headers
-            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
-            await page.setExtraHTTPHeaders({
-              'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
-              'X-Requested-With': 'XMLHttpRequest',
-              'Accept': 'application/json, text/plain, */*',
-              'Referer': 'https://www.sonyliv.com/shows/sethd-1000000001/',
-              'Origin': 'https://www.sonyliv.com'
-            });
+          # Download .mpd file
+          MPD_CONTENT=$(curl -s -L \
+            -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' \
+            -H 'Referer: https://www.sonyliv.com/' \
+            "$VIDEO_URL")
 
-            // Direct API call
-            console.log("Calling API directly...");
-            const response = await page.evaluate(async () => {
-              const res = await fetch('https://apiv4.sonyliv.com/AGL/4.7/A/ENG/MWEB/IN/BR/CONTENT/VIDEOURL/VOD/1000051729', {
-                method: 'GET',
-                credentials: 'include'
-              });
-              return await res.json();
-            });
+          # Extract hdnea
+          HDNEA=$(echo "$MPD_CONTENT" | grep -o 'hdnea=[^&" ]*' | head -1)
+          if [ -z "$HDNEA" ]; then
+            # Fallback: extract from videoURL itself
+            HDNEA=$(echo \"$VIDEO_URL\" | grep -o 'hdnea=[^&" ]*')
+          fi
 
-            // Save response
-            fs.writeFileSync('api_response.json', JSON.stringify(response, null, 2));
-            console.log("API Response saved.");
+          if [ -z "$HDNEA" ]; then
+            echo "hdnea not found!"
+            echo "MPD Sample:"
+            echo "$MPD_CONTENT" | head -20
+            exit 1
+          fi
 
-            // Debug
-            console.log("Top-level keys:", Object.keys(response).join(', '));
-
-            if (response.resultCode !== 'OK') {
-              console.log("API FAILED:", response.message || response.errorDescription);
-              process.exit(1);
-            }
-
-            // Extract videoURL
-            let videoURL = response.result?.videoURL || response.resultObj?.videoURL || response.videoURL;
-            if (!videoURL) {
-              console.log("videoURL NOT FOUND!");
-              process.exit(1);
-            }
-
-            console.log("Found videoURL:", videoURL.substring(0, 120) + "...");
-
-            const hdnea = videoURL.match(/hdnea=[^&\s"']+/)?.[0];
-            if (!hdnea) {
-              console.log("hdnea NOT FOUND in URL!");
-              process.exit(1);
-            }
-
-            console.log("SUCCESS! hdnea =", hdnea);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `HDNEA=${hdnea}\n`);
-
-            await browser.close();
-          })();
-          JS
+          echo "Extracted hdnea: $HDNEA"
+          echo "HDNEA=$HDNEA" >> $GITHUB_OUTPUT
 
       - name: Update Slivtv.json
         run: |
-          HDNEA=$(grep "HDNEA=" $GITHUB_OUTPUT | cut -d= -f2-)
+          HDNEA="${{ steps.fetch_hdnea.outputs.HDNEA }}"
           FILE="Slivtv.json"
+
+          if [ ! -f "$FILE" ]; then
+            echo "$FILE not found!"
+            exit 1
+          fi
+
+          # Backup
           cp "$FILE" "$FILE.bak"
+
+          # Replace hdnea in all links
           sed -i "s|hdnea=[^&\"' ]*|${HDNEA}|g" "$FILE"
-          echo "Updated $FILE"
+
+          echo "Updated $FILE with new hdnea"
 
       - name: Commit & Push
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Slivtv.json
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "Auto-update hdnea (direct API)"
+            git commit -m "Auto-update hdnea from SonyLIV (curl)"
             git push
+            echo "Pushed!"
           fi
+          
