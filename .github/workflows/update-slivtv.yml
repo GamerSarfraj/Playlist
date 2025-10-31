@@ -1,8 +1,8 @@
-name: Update SonyLIV hdnea (No 403)
+name: Update SonyLIV hdnea Cookies Update 
 
 on:
   schedule:
-    - cron: '0 */4 * * *'   # Har 4 ghante mein
+    - cron: '0 */2 * * *'   
   workflow_dispatch:
 
 jobs:
