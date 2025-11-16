@@ -2,6 +2,11 @@
   {
     "logo": "https://origin-staticv2.sonyliv.com/videoasset_images/manage_file/1000011341/1763213747313557_NZvsWI25_1st_ODI_landscape_thumb.jpg",
     "name": "1st ODI - 16 Nov 2025 [ENG]",
-    "link": "https://sonydaimenew.akamaized.net/hls/live/2018457/wivsnz/ENG/std_lrh-800300010.m3u8?hdnea=exp=1763325025~acl=/*~id=95238735871383551477821445756589~hmac=b333af89a0cc22194ef8a90d61d44f61ddc15be75067842d4deba7779749578b"
+    "link": "https://sonydaimenew.akamaized.net/hls/live/2018457/wivsnz/ENG/std_lrh-800300010.m3u8?hdnea=exp=1763326850~acl=/*~id=53753649242614030666271217939508~hmac=dc920977f4f8e86029f4527e80889b9d0bd855355bd3c99e5c713094cca03ca9"
+  },
+  {
+    "logo": "https://origin-staticv2.sonyliv.com/videoasset_images/manage_file/1000011345/1763214919816370_ACC25_UAE_vs_OMA_live_Landscapet_thumb.jpg",
+    "name": "UAE vs Oman - 16 Nov 2025  [ENG]",
+    "link": "https://sonydaimenew.akamaized.net/hls/live/2037140/DAI20-criclive/std_lrh-800300010.m3u8?hdnea=exp=1763326850~acl=/*~id=53753649242614030666271217939508~hmac=dc920977f4f8e86029f4527e80889b9d0bd855355bd3c99e5c713094cca03ca9"
   }
 ]
