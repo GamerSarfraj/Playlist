@@ -1,12 +1,7 @@
 [
   {
-    "logo": "https://images.fancode.com/aig/match/v1/137589_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Chelsea F.c. Women Vs Barcelona Women",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137589_english_hls_3047f086a376998_1ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/137590_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Paris Saint Germain Women Vs Bayern Munich Women",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/137590_english_hls_4d0e05cc6155233_1ta-di_h264/index.m3u8"
+    "logo": "https://images.fancode.com/aig/match/v1/118486_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Practice 1",
+    "link": "https://d1r6ffu7d6ddho.cloudfront.net/out/v1/4b9069a12d6b438eae655ddad360002c/index.m3u8"
   }
 ]
