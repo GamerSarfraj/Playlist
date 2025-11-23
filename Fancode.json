@@ -1,15 +1,5 @@
 [
   {
-    "logo": "https://images.fancode.com/aig/match/v1/138411_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "India Vs Korea",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/138411_english_hls_41f600ec1663678_1ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/138218_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Quetta Qavalry Vs Aspin Stallions",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/138218_english_hls_de7f73c3dd50667_1ta-di_h264/index.m3u8"
-  },
-  {
     "logo": "https://images.fancode.com/aig/match/v1/138219_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Northern Warriors Vs Vista Riders",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/138219_english_hls_e2e074d4c631795_1ta-di_h264/index.m3u8"
@@ -20,6 +10,11 @@
     "link": "https://in-mc-fdlive.fancode.com/mumbai/130950_english_hls_984cddd6ad72101_1adfreeta-di_h264/index.m3u8"
   },
   {
+    "logo": "https://images.fancode.com/aig/match/v1/130956_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Getafe Cf Vs Atletico De Madrid",
+    "link": "https://video.twimg.com/amplify_video/1869037412439261184/pl/th-SCwIUMtNo-PsU.m3u8"
+  },
+  {
     "logo": "https://images.fancode.com/aig/match/v1/138051_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Leeward Islands Hurricanes Vs Jamaica Scorpions",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/138051_english_hls_0c2f219f1776879_1ta-di_h264/index.m3u8"
@@ -28,10 +23,5 @@
     "logo": "https://images.fancode.com/aig/match/v1/138050_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Windward Islands Volcanoes Vs Barbados Pride",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/138050_english_hls_7faa5a746270788_1ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/130956_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Getafe Cf Vs Atletico De Madrid",
-    "link": "https://video.twimg.com/amplify_video/1869037412439261184/pl/th-SCwIUMtNo-PsU.m3u8"
   }
 ]
