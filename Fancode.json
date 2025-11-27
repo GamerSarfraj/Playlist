@@ -28,5 +28,10 @@
     "logo": "https://images.fancode.com/aig/match/v1/136159_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Eastern Sc Vs Gamba Osaka",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/136159_english_hls_99a990709e79732_1ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/138239_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Ireland Vs Bangladesh",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/138239_english_hls_eb5430a5c152122_1ta-di_h264/index.m3u8"
   }
 ]
