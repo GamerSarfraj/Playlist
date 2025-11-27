@@ -13,5 +13,15 @@
     "logo": "https://images.fancode.com/aig/match/v1/138420_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Korea Vs Canada",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/138420_english_hls_de2fddf00127815_1ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/138421_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "India Vs New Zealand",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/138421_english_hls_45b15d3c6933178_1ta-di_h264/index.m3u8"
+  },
+  {
+    "logo": "https://images.fancode.com/aig/match/v1/136147_CASACARDS_PARTNER_16_9_1920_1080.png",
+    "name": "Macarthur Vs Wofoo Tai Po",
+    "link": "https://in-mc-fdlive.fancode.com/mumbai/136147_english_hls_030144a96a58534_1ta-di_h264/index.m3u8"
   }
 ]
