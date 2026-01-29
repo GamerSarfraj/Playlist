@@ -1,15 +1,5 @@
 [
   {
-    "logo": "https://images.fancode.com/aig/match/v1/140132_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Ireland Vs United Arab Emirates",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/140132_english_hls_d21924d2cc77509_1ta-di_h264/index.m3u8"
-  },
-  {
-    "logo": "https://images.fancode.com/aig/match/v1/139768_CASACARDS_PARTNER_16_9_1920_1080.png",
-    "name": "Windward Islands Women Vs Leeward Islands Women",
-    "link": "https://in-mc-fdlive.fancode.com/mumbai/139768_english_hls_c41113cd342833_1ta-di_h264/index.m3u8"
-  },
-  {
     "logo": "https://images.fancode.com/aig/match/v1/139767_CASACARDS_PARTNER_16_9_1920_1080.png",
     "name": "Jamaica Women Vs Barbados Women",
     "link": "https://in-mc-fdlive.fancode.com/mumbai/139767_english_hls_8a982f4b4a96687_1ta-di_h264/index.m3u8"
